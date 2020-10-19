@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -10,9 +11,10 @@
 #include "cnstrmgr.h"
 #include "grsearch.h"
 
-int *HPMSTAR_MinVVector = NULL;
+//int *HPMSTAR_MinVVector = NULL;
 
-void HPMSTAR_CreateMinVVector(int DemandSum, int CAP)
+/*
+void HPMSTAR_CreateMinVVector(double DemandSum, double CAP)
 {
   int i,MinV;
 
@@ -29,15 +31,17 @@ void HPMSTAR_CreateMinVVector(int DemandSum, int CAP)
     HPMSTAR_MinVVector[i] = MinV;
   }
 }
+*/
 
-int HPM_CalcMinV(int DemandSum, int CAP)
+int HPM_CalcMinV(double DemandSum, double CAP)
 {
-  int MinV,CAPSum;
+   int MinV;
+   double CAPSum;
 
-  if (HPMSTAR_MinVVector != NULL)
-  {
-    return HPMSTAR_MinVVector[DemandSum];
-  }
+  //if (HPMSTAR_MinVVector != NULL)
+  // {
+  // return HPMSTAR_MinVVector[DemandSum];
+  //}
 
   MinV = 1;
   CAPSum = CAP;
@@ -138,8 +142,8 @@ void HPMSTAR_DeriveCutsFromPolygon(int MaxAlpha,
 
 void HPMSTAR_ComputeMaxAlpha(int CListSize,
                              int TListSize,
-                             int CTDemandSum,
-                             int CAP,
+                             double CTDemandSum,
+                             double CAP,
                              int *MaxAlpha)
 {
   int MinV;
@@ -152,21 +156,26 @@ void HPMSTAR_ComputeMaxAlpha(int CListSize,
 }
 
 void HPMSTAR_ComputeLBValues(int MaxAlpha,
-                             int CAP,
-                             int SDemandSum,
+                             double CAP,
+                             double SDemandSum,
                              int TSize,
-                             int *SortedTDemand,  /* increasing */
-                             int TDemandSum,
+                             double *SortedTDemand,  /* increasing */
+                             double TDemandSum,
                              int CSize,
-                             int *SortedCDemand,  /* decreasing */
+                             double *SortedCDemand,  /* decreasing */
                              int *LB)
 {
   int i,r,Alpha;
-  int BNDa, BNDb, BNDc, BNDExpand, BNDNew;
-  int DemandSumExpand, MinVExpand, CAPSumExpand, AccNewDemand;
-  int MinVNew, CAPSumNew;
+  int BNDa, BNDb, BNDc, BNDExpand;
+  int BNDNew;
+  double DemandSumExpand;
+  int MinVExpand;
+  double CAPSumExpand;
+  double AccNewDemand = 0.0;
+  int    MinVNew   = -1;
+  double CAPSumNew = 0.0;
   int STMinV, SMinV;
-  int STDemandSum;
+  double STDemandSum;
 
   STDemandSum = SDemandSum + TDemandSum;
 
@@ -272,14 +281,14 @@ void HPMSTAR_CalcNextCSize(int TSize,
   }
 }
 
-void HPMSTAR_GetCutsForSTC(int SDemandSum,
+void HPMSTAR_GetCutsForSTC(double SDemandSum,
                            int TCard,
-                           int *SortedTDemand,  /* increasing */
-                           int TDemandSum,
+                           double *SortedTDemand,  /* increasing */
+                           double TDemandSum,
                            int CCard,
-                           int *SortedCDemand,  /* decreasing */
-                           int CDemandSum,
-                           int CAP,
+                           double *SortedCDemand,  /* decreasing */
+                           double CDemandSum,
+                           double CAP,
                            int *NoOfCuts,  /* Return */
                            int *A,         /* - */
                            int *B,         /* - */
@@ -288,9 +297,10 @@ void HPMSTAR_GetCutsForSTC(int SDemandSum,
                            int *MaxLB,
                            int *AlphaAtLB) /* - */
 {
-  int MaxAlpha,CTDemandSum;
-  int *LB;
-
+   int MaxAlpha;
+   double CTDemandSum;
+   int *LB;
+   
   CTDemandSum = CDemandSum + TDemandSum;
   HPMSTAR_ComputeMaxAlpha(CCard,TCard,CTDemandSum,CAP,&MaxAlpha);
 
@@ -314,8 +324,8 @@ void HPMSTAR_GetCutsForSTC(int SDemandSum,
 
 void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support graph. */
                                     int NoOfCustomers,
-                                    int *Demand,
-                                    int CAP,
+                                    const double *Demand,
+                                    double CAP,
                                     int *DemandIndex,
                                     int *SList,
                                     int SSize,
@@ -328,10 +338,11 @@ void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support gra
 {
   /* Including partial HPMs */
   int Idx,i,j,k,CutNr;
-  int TSize,CSize,OrigTSize;
+  int TSize,CSize;
   int TIdx,CIdx;
   int TXBestNode,RemovedNodes;
-  int SDemandSum,TDemandSum,CDemandSum;
+  double SDemandSum,CDemandSum;
+  double TDemandSum;
   int NoOfCuts;
   int MinLB,MaxLB;
   int MaxAlpha;
@@ -341,7 +352,8 @@ void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support gra
   double Lambda,Sigma,LHS,RHS;
   char *InS, *InT, *InC, *InTCopy;
   int *TList, *CList;
-  int *SortedTDemand, *SortedCDemand;
+  double *SortedCDemand;
+  double *SortedTDemand; 
   int *AVector, *BVector, *LVector;
   int *AlphaAtLB;
   int *TXIndex, *CXIndex;
@@ -372,8 +384,8 @@ void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support gra
   CXVal = MemGetDV(NoOfCustomers+1);
   CXScore = MemGetDV(NoOfCustomers+1);
 
-  SortedTDemand = MemGetIV(NoOfCustomers+1);
-  SortedCDemand = MemGetIV(NoOfCustomers+1);
+  SortedTDemand = MemGetDV(NoOfCustomers+1);
+  SortedCDemand = MemGetDV(NoOfCustomers+1);
 
   AVector = MemGetIV(NoOfCustomers+1);
   BVector = MemGetIV(NoOfCustomers+1);
@@ -406,13 +418,17 @@ void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support gra
     for (j=1; j<=SupportPtr->LP[i].CFN; j++)
     {
       k = SupportPtr->LP[i].FAL[j];
-      if (k > NoOfCustomers)
+      //printf("k:%d\n",k);
+      if (k > NoOfCustomers){
       SBoundary += XMatrix[i][k];
+      //printf("1 SBoundary:%g XMatrix[i:%d][k:%d]:%g\n",SBoundary,i,k,XMatrix[i][k]);
+      }
       else
       if (InS[k] == 0)
       {
         XVal = XMatrix[i][k];
         SBoundary += XVal;
+        //printf("2 SBoundary:%g XMatrix[i:%d][k:%d]:%g\n",SBoundary,i,k,XMatrix[i][k]);
         CXVal[i] += XVal;
       }
     }
@@ -492,7 +508,6 @@ void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support gra
     }
 
     TSize = TIdx;
-    OrigTSize = TSize;
 
     if (TSize >= 2) SortIndexDVInc(TXIndex,TXVal,TSize);
 
@@ -521,14 +536,16 @@ void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support gra
         Sigma  = (1.0 * AVector[CutNr]) / (1.0 * BVector[CutNr]);
 
         RHS = (ActualCTValCopy * Sigma) + Lambda;
-        LHS = SBoundary;
+        LHS = SBoundary;        
 
+        //TODO: MVG: feasTol?
         if (LHS < (RHS - 0.01))
-        {
+        {           
           if ((RHS - LHS) > (*MaxViolation))
           {
             *MaxViolation = (RHS - LHS);
           }
+          //printf("RHS=%g LHS=%g MaxViolation=%g\n",RHS,LHS,*MaxViolation);
 
           TSize = 0;
           for (i=1; i<=NoOfCustomers; i++)
@@ -631,7 +648,7 @@ void HPMSTAR_CheckNonUnitHPMsForSV5(ReachPtr SupportPtr, /* Original support gra
 
 void HPMSTAR_CalcQXMatrix(ReachPtr SupportPtr, /* Original support graph. */
                           int NoOfCustomers,
-                          int *Demand,         /* Original demand vector. */
+                          const double *Demand,         /* Original demand vector. */
                           double **XMatrix,
                           int NoOfSuperNodes,
                           int *SuperNodeNr,
@@ -667,8 +684,8 @@ void HPMSTAR_CalcQXMatrix(ReachPtr SupportPtr, /* Original support graph. */
 void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
                      ReachPtr SAdjRPtr,   /* Shrunk support graph. */
                      int NoOfCustomers,
-                     int *Demand,         /* Original demand vector. */
-                     int CAP,
+                     const double *Demand,         /* Original demand vector. */
+                     double CAP,
                      int NoOfSuperNodes,
                      double *XInSuperNode,
                      double **XMatrix,
@@ -680,8 +697,6 @@ void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
                      CnstrMgrPointer CutsCMP,
                      double *MaxViolation)
 {
-  const double EpsViolation = 0.01;
-  char CutAdded;
   char CallBackAntiSets;
   int i,j,k;
   int Source,BestNode,NodeSum;
@@ -689,14 +704,16 @@ void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
   int OrigNodesInSet;
   int Label;
   int MaxCSize;
-  double XInSet,Score,BestScore,SBoundary,SToDepot;
+  double XInSet,BestScore,SToDepot;
+  double Score = 0.0;
   double LHS,RHS;
   int SListSize;
-  int SDemandSum;
+  double SDemandSum;
   int *Node, *Pos, *NodeLabel;
   int *DemandIndex;
   int *SList;
-  int *SuperNodeNr, *SuperNodeSize, *SuperDemand;
+  int *SuperNodeNr, *SuperNodeSize;
+  double *SuperDemand;
   double *XVal;
   double *QXVal;
   double **QXMatrix;
@@ -714,7 +731,7 @@ void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
 
   SuperNodeNr = MemGetIV(NoOfCustomers+1);
   SuperNodeSize = MemGetIV(NoOfSuperNodes+1);
-  SuperDemand = MemGetIV(NoOfSuperNodes+1);
+  SuperDemand = MemGetDV(NoOfSuperNodes+1);
 
   XVal = MemGetDV(NoOfSuperNodes+1);
   QXVal = MemGetDV(NoOfSuperNodes+1);
@@ -723,7 +740,7 @@ void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
 
   DemandIndex = MemGetIV(NoOfCustomers+1);
   for (i=1; i<=NoOfCustomers; i++) DemandIndex[i] = i;
-  SortIndexIVInc(DemandIndex,Demand,NoOfCustomers);
+  SortIndexDVInc(DemandIndex,Demand,NoOfCustomers);
 
   ReachInitMem(&AntiSetsRPtr,NoOfSuperNodes);
   GeneratedAntiSets = 0;
@@ -771,7 +788,7 @@ void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
     OrigNodesInSet = SuperNodeSize[Source];
     XInSet = XInSuperNode[Source];
     SToDepot = SMatrix[Source][NoOfSuperNodes+1];
-    SBoundary = 2.0 * (OrigNodesInSet - XInSet);
+    //SBoundary = 2.0 * (OrigNodesInSet - XInSet);
 
     if (SelectionRule == 3)
     {
@@ -827,7 +844,6 @@ void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
     CallBackAntiSets = 1;
 
     BestNode = 1;
-    CutAdded = 0;
 
     while ((MinCandidateIdx <= MaxCandidateIdx) &&
            (BestNode > 0) &&
@@ -905,7 +921,7 @@ void HPMSTAR_DirectX(ReachPtr SupportPtr, /* Original support graph. */
         OrigNodesInSet += SuperNodeSize[BestNode];
         XInSet += (XVal[BestNode] + XInSuperNode[BestNode]);
         SToDepot += SMatrix[BestNode][NoOfSuperNodes+1];
-        SBoundary = 2.0 * (OrigNodesInSet - XInSet);
+        //SBoundary = 2.0 * (OrigNodesInSet - XInSet);
 
         if (SelectionRule == 3)
         {

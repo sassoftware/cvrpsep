@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -12,6 +13,7 @@
 #include "sort.h"
 #include "binpack.h"
 #include "cnstrmgr.h"
+#include "tolerances.h"
 
 typedef struct
 {
@@ -71,7 +73,13 @@ void FCITS_ComputeLHS(ReachPtr CompsRPtr,
         if (NodeLabel[k] != NodeLabel[i])
         {
           Boundary[NodeLabel[k]] += FlowMatrix[i][k];
+          //if(FlowMatrix[i][k] > 0)
+          // printf("Boundary[%d]: %g i:%d k:%d flow:%g\n",
+          //        NodeLabel[k],Boundary[NodeLabel[k]],i,k,FlowMatrix[i][k]);
           Boundary[NodeLabel[i]] += FlowMatrix[i][k];
+          //if(FlowMatrix[i][k] > 0)
+          // printf("Boundary[%d]: %g i:%d k:%d flow:%g\n",
+          //        NodeLabel[i],Boundary[NodeLabel[i]],i,k,FlowMatrix[i][k]);
         }
       }
     }
@@ -81,12 +89,20 @@ void FCITS_ComputeLHS(ReachPtr CompsRPtr,
   for (i=1; i<=NoOfSuperNodes; i++)
   {
     Boundary[0] += FlowMatrix[0][i];
+    //if(FlowMatrix[0][i] > 0)
+    // printf("Boundary[%d]: %g i:%d k:%d flow:%g\n",
+    //        0,Boundary[0],0,i,FlowMatrix[0][i]);
     Boundary[NodeLabel[i]] += FlowMatrix[0][i];
+    //if(FlowMatrix[0][i] > 0)
+    // printf("Boundary[%d]: %g i:%d k:%d flow:%g\n",
+    //        NodeLabel[i],Boundary[NodeLabel[i]],0,i,FlowMatrix[0][i]);    
   }
 
   *LHS = 0.0;
-  for (i=0; i<=NoOfComps; i++)
-  *LHS += Boundary[i];
+  for (i=0; i<=NoOfComps; i++){
+     *LHS += Boundary[i];
+     //printf("*LHS:%g Boundary[%d]:%g\n",*LHS,i,Boundary[i]);
+  }
 
   MemFree(NodeLabel);
   MemFree(Boundary);
@@ -94,15 +110,16 @@ void FCITS_ComputeLHS(ReachPtr CompsRPtr,
 
 void FCITS_ComputeRHS(ReachPtr PartitionPtr,
                       int PartitionSize,
-                      int *SuperNodeDemand,
-                      int CAP,
+                      double *SuperNodeDemand,
+                      double CAP,
                       double *RHS)
 {
   int i,j,k;
   int FullV,LB,UB;
-  int *ItemSize, *Bin;
+  int *Bin;
+  double *ItemSize;
 
-  ItemSize = MemGetIV(PartitionSize+1);
+  ItemSize = MemGetDV(PartitionSize+1);
   Bin = MemGetIV(PartitionSize+1);
 
   FullV = 0;
@@ -113,19 +130,26 @@ void FCITS_ComputeRHS(ReachPtr PartitionPtr,
     {
       k = PartitionPtr->LP[i].FAL[j];
       ItemSize[i] += SuperNodeDemand[k];
+      //printf("k:%d i:%d ItemSize:%d SuperNodeDemand:%d\n",
+      //   k,i,ItemSize[i],SuperNodeDemand[k]);
     }
 
     while (ItemSize[i] > CAP)
     {
       FullV++;
       ItemSize[i] -= CAP;
+      //printf("FullV=%d ItemSize=%d\n",FullV,ItemSize[i]);
     }
   }
 
-  SortIVDec(ItemSize,PartitionSize);
+  SortDVDec(ItemSize,PartitionSize);
   BP_ExactBinPacking(CAP,ItemSize,PartitionSize,&LB,&UB,Bin);
 
-  *RHS = (2.0 * (LB + PartitionSize)) + (4.0 * FullV);
+  //MVG: rather than start at FullV=1 here, PartitionSize is added in directly,
+  //  so, FullV is the number of additional vehicles required for all partitions
+  //but, it is not clear to me why that is 4.0 vs 2.0?
+  *RHS = (2.0 * (LB + PartitionSize)) + (4.0 * FullV); 
+  //printf("RHS:%g LB:%d PartitionSize:%d FullV:%d\n",*RHS,LB,PartitionSize,FullV);
 
   MemFree(ItemSize);
   MemFree(Bin);
@@ -400,13 +424,14 @@ void FCITS_CheckForDominance(int NoOfSuperNodes,
 }
 
 void FCITS_TreeSearch(int NoOfSuperNodes,
-                      int CAP,
-                      int *SuperNodeDemand,
+                      double CAP,
+                      double *SuperNodeDemand,
                       double **FlowMatrix,
                       ReachPtr FlowRPtr,
                       int MaxCuts,
                       int MaxFCITSLoops,
                       int *GeneratedCuts,
+                      double  EpsViolation,
                       double *MaxViolation,
                       double *CutsRHS,
                       ReachPtr CutsRPtr)
@@ -427,7 +452,7 @@ void FCITS_TreeSearch(int NoOfSuperNodes,
   TreeSearchPtr TreePtr;
 
   CutNr = 0;
-  Eps = 0.02;
+  Eps = EpsViolation;
   MaxLevel = NoOfSuperNodes-2;
 
   TotalEdges = 0;
@@ -518,6 +543,7 @@ void FCITS_TreeSearch(int NoOfSuperNodes,
   if (Violation >= Eps)
   {
     ListSize = 0;
+    //printf("Violation:%g CutNr:%d\n",Violation,CutNr);
 
     for (i=1; i<=NoOfSuperNodes; i++)
     {
@@ -667,7 +693,8 @@ void FCITS_TreeSearch(int NoOfSuperNodes,
     LevelViolation[Level] = Violation;
 
     if (Violation >= Eps)
-    {
+       {
+          //printf("Violation:%g\n",Violation);
       ListSize = 0;
       for (i=1; i<=TreePtr[Level].PartitionSize; i++)
       {
@@ -776,21 +803,23 @@ void FCITS_ComputeFlowMatrix(ReachPtr SupportPtr,
 
 void FCITS_MainCutGen(ReachPtr SupportPtr,
                       int NoOfCustomers,
-                      int *Demand,
-                      int CAP,
+                      const double *Demand,
+                      double CAP,
                       double **XMatrix,
                       ReachPtr InitSuperNodesRPtr,
                       ReachPtr InitSAdjRPtr,
-                      int *InitSuperDemand,
+                      double *InitSuperDemand,
                       int InitShrunkGraphCustNodes,
                       int MaxFCITSLoops,
                       int MaxNoOfCuts,
+                      double  EpsViolation,
                       double *MaxViolation,
                       int *NoOfGeneratedCuts,
                       CnstrMgrPointer CutsCMP)
 {
   int i,j,k,Idx,MinIdx,MaxIdx;
-  int CompNr,CompDemand;
+  int CompNr;
+  double CompDemand;
   int CustNodes,DepotDegree,NoOfComponents;
   int WrkNoOfSuperNodes;
   int NodeListSize;
@@ -803,7 +832,7 @@ void FCITS_MainCutGen(ReachPtr SupportPtr,
   int *IVWrk1, *IVWrk2, *IVWrk3, *IVWrk4;
 
   char *InitSuperNodeInComp;
-  int *WrkSuperNodeDemand;
+  double *WrkSuperNodeDemand;
   int *NodeList;
   int *SetSize;
   double *CutsRHS;
@@ -829,7 +858,7 @@ void FCITS_MainCutGen(ReachPtr SupportPtr,
   IVWrk4 = MemGetIV(CustNodes+2);
 
   InitSuperNodeInComp = MemGetCV(CustNodes+2);
-  WrkSuperNodeDemand = MemGetIV(CustNodes+2);
+  WrkSuperNodeDemand = MemGetDV(CustNodes+2);
 
   NodeList = MemGetIV(NoOfCustomers+1);
   SetSize = MemGetIV(CustNodes+2);
@@ -899,7 +928,7 @@ void FCITS_MainCutGen(ReachPtr SupportPtr,
       NodeListSize = 0;
       for (j=1; j<=WrkNoOfSuperNodes; j++)
       if (j != i)
-      if (FlowMatrix[i][j] >= 0.001)
+      if (FlowMatrix[i][j] >= EpsZero)
       {
         NodeList[++NodeListSize] = j;
       }
@@ -933,6 +962,7 @@ void FCITS_MainCutGen(ReachPtr SupportPtr,
                      MaxCuts,
                      MaxFCITSLoops,
                      &GeneratedCuts,
+                     EpsViolation,
                      &MaxFCIViolation,
                      CutsRHS,
                      CutsRPtr);
@@ -966,6 +996,7 @@ void FCITS_MainCutGen(ReachPtr SupportPtr,
           }
         }
 
+        //printf("Add constraint %d NoOfSets:%d\n",CutNr,NoOfSets);
         CMGR_AddExtCnstr(CutsCMP,
                          CMGR_CT_GENCAP,
                          0,

@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -358,12 +359,11 @@ void COMPRESS_ShrinkGraph(ReachPtr SupportPtr,
   MemFree(IVWrk3);
   MemFree(IVWrk4);
 
+  MemFree(Shrinkable);//MVG 11/07/03
+  MemFree(CompList);  //MVG 11/07/03
   MemFree(CompNr);
   MemFree(NodeList);
-
-  MemFree(Shrinkable);
-  MemFree(CompList);
-
+ 
   ReachFreeMem(&CmprsEdgesRPtr);
   ReachFreeMem(&CompsRPtr);
 }

@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -18,8 +19,8 @@ void GLM_IdentifySingleSet(ReachPtr SupportPtr,
                            int *NodeListSize)
 {
   int i,j,k,DepotIdx;
-  int GraphNodes,ArcCap,CapFromSource,MaxFlowValue;
-  double XVal,XijFactor,ScaleFactor,WeightedSum;
+  int GraphNodes,ArcCap,CapFromSource;
+  double XVal,XijFactor,ScaleFactor,WeightedSum,MaxFlowValue;
   double SGi, SGj, SGk, BG;
   int *SourceNodeList;
   double *DepotEdgeXVal;
@@ -53,7 +54,7 @@ void GLM_IdentifySingleSet(ReachPtr SupportPtr,
         XijFactor = 1.0 - ((SGi + SGk) / BG);
         XVal *= XijFactor;
 
-        ArcCap = XVal * ScaleFactor;
+        ArcCap = (int)(XVal * ScaleFactor);
 
         MXF_AddArc(MXFPtr,i,k,ArcCap);
         MXF_AddArc(MXFPtr,k,i,ArcCap);
@@ -91,7 +92,7 @@ void GLM_IdentifySingleSet(ReachPtr SupportPtr,
 
     XVal -= WeightedSum;
 
-    ArcCap = XVal * ScaleFactor;
+    ArcCap = (int)(XVal * ScaleFactor);
 
     if (ArcCap > 0)
     {

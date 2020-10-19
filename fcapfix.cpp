@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -142,9 +143,9 @@ void FCAPFIX_CompAddSinkNode(ReachPtr SupportPtr,
 
 void FCAPFIX_SolveMaxFlow(MaxFlowPtr MXFPtr,
                           int NoOfCustomers,
-                          int InfCap,
-                          int *ResidualCap,
-                          int *NodeExcess,
+                          double InfCap,
+                          double *ResidualCap,
+                          double *NodeExcess,
                           int *ArcCapFromSource,
                           int *ArcCapToSink,
                           int *FixOnSourceSide,
@@ -154,7 +155,8 @@ void FCAPFIX_SolveMaxFlow(MaxFlowPtr MXFPtr,
                           int *SinkNodeList, /* Resulting set */
                           int *SinkNodeListSize) /* Size of resulting set */
 {
-  int i,k,MaxFlowValue;
+   int i,k;
+   double MaxFlowValue;
 
   /* Source is NoOfCustomers+1, Sink is NoOfCustomers+2 */
 
@@ -194,7 +196,7 @@ void FCAPFIX_SolveMaxFlow(MaxFlowPtr MXFPtr,
 
 void FCAPFIX_CheckExpandSet(ReachPtr SupportPtr,
                             int NoOfCustomers,
-                            int *Demand, int CAP,
+                            double *Demand, double CAP,
                             double **XMatrix,
                             char *NodeInSet,
                             char *FixedOut,
@@ -202,7 +204,8 @@ void FCAPFIX_CheckExpandSet(ReachPtr SupportPtr,
                             int *AddSecondNode)
 {
   int i,j,k;
-  int DemandSum,CAPSum,MinV,BestAddNode,BestSecondNode;
+  double DemandSum,CAPSum;
+  int MinV,BestAddNode,BestSecondNode;
   double XVal,XSumInSet,BestXScore;
   double *XNodeSum;
 
@@ -274,7 +277,7 @@ void FCAPFIX_CheckExpandSet(ReachPtr SupportPtr,
 
 void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
                          int NoOfCustomers,
-                         int *Demand, int CAP,
+                         double *Demand, double CAP,
                          int *SuperNodeSize,
                          double **XMatrix,
                          int MaxCuts,
@@ -284,8 +287,10 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
 {
   const double EpsViolation = 0.01;
   int i,j,k,DepotIdx,RoundNr,AddNode,AddSecondNode;
-  int GraphNodes,ArcCap,InfCap,VCAP,MaxFlowValue;
-  int OrigNodes,MinV,DemandSum,CAPSum,MaxDemand;
+  int GraphNodes,ArcCap;
+  double VCAP,InfCap,MaxFlowValue;
+  int OrigNodes,MinV;
+  double DemandSum,CAPSum,MaxDemand;
   int FlowScale;
   double XVal,XInSet;
   double Violation,LHS,RHS;
@@ -301,7 +306,7 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
   char *NodeInSet;
   char *FixedOut;
 
-  int *ResidualCap, *NodeExcess;
+  double *ResidualCap, *NodeExcess;
   int NetworkNodes, NetworkArcs;
 
   int *NodeList;
@@ -361,7 +366,7 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
       {
         XVal = XMatrix[i][k];
         XVal *= VCAP;
-        ArcCap = XVal + 1; /* => Round up. */
+        ArcCap = (int)(XVal + 1); /* => Round up. */
 
         MXF_AddArc(MXFPtr,i,k,ArcCap);
         MXF_AddArc(MXFPtr,k,i,ArcCap);
@@ -392,7 +397,7 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
 
     if (XVal > 0)
     {
-      ArcCap = XVal;
+      ArcCap = (int)(XVal);
 
       InfCap += ArcCap;
 
@@ -404,7 +409,7 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
     else
     if (XVal <= 0)
     {
-      ArcCap = -XVal;
+      ArcCap = -(int)(XVal);
 
       MXF_AddArc(MXFPtr,k,NoOfCustomers+2,ArcCap);
       MXF_AddArc(MXFPtr,NoOfCustomers+1,k,0); /* Zero capacity from source. */
@@ -424,8 +429,8 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
 
   MXF_GetNetworkSize(MXFPtr,&NetworkNodes,&NetworkArcs);
 
-  ResidualCap = MemGetIV(NetworkArcs+1);
-  NodeExcess = MemGetIV(NetworkNodes+1);
+  ResidualCap = MemGetDV(NetworkArcs+1);
+  NodeExcess = MemGetDV(NetworkNodes+1);
 
   MXF_GetCurrentFlow(MXFPtr,ResidualCap,NodeExcess);
 
@@ -633,17 +638,16 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
   MemFree(FixedToSinkList);
   MemFree(NodeList);
 
+  MemFree(OneNodeCut);//MVG 11/07/03
+  MemFree(NodeInSet); //MVG 11/07/03
+  MemFree(FixedOut);  //MVG 11/07/03
+  MemFree(NodeExcess); //MVG 11/07/03
+  MemFree(ResidualCap);//MVG 11/07/03
+
   MemFree(DepotEdgeXVal);
 
   ReachFreeMem(&HistoryRPtr);
 
   MXF_FreeMem(MXFPtr);
-
-  MemFree(ResidualCap);
-  MemFree(NodeExcess);
-
-  MemFree(OneNodeCut);
-  MemFree(NodeInSet);
-  MemFree(FixedOut);
 }
 

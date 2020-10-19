@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -12,12 +13,12 @@
 #include "hpmstar.h"
 
 void MSTARSEP_SeparateMultiStarCuts(int NoOfCustomers,
-                                    int *Demand,
-                                    int CAP,
+                                    const double *Demand,
+                                    double CAP,
                                     int NoOfEdges,
-                                    int *EdgeTail,
-                                    int *EdgeHead,
-                                    double *EdgeX,
+                                    const int *EdgeTail,
+                                    const int *EdgeHead,
+                                    const double *EdgeX,
                                     CnstrMgrPointer CMPExistingCuts,
                                     int MaxNoOfCuts,
                                     double *MaxViolation,
@@ -27,12 +28,11 @@ void MSTARSEP_SeparateMultiStarCuts(int NoOfCustomers,
   char CallHPMAgain;
   char SearchPartialMStars;
   int i,j,k;
-  int GeneratedCuts;
   int NoOfV1Cuts;
   int ShrunkGraphCustNodes;
   int MaxTotalCuts;
   double MaxHPMViolation;
-  int *SuperDemand;
+  double *SuperDemand;
   double *XInSuperNode;
   double **XMatrix;
   double **SMatrix;
@@ -45,7 +45,7 @@ void MSTARSEP_SeparateMultiStarCuts(int NoOfCustomers,
   ReachInitMem(&SAdjRPtr,NoOfCustomers+1);
   ReachInitMem(&SuperNodesRPtr,NoOfCustomers+1);
 
-  SuperDemand = MemGetIV(NoOfCustomers+1);
+  SuperDemand = MemGetDV(NoOfCustomers+1);
   XInSuperNode = MemGetDV(NoOfCustomers+1);
 
   SMatrix = MemGetDM(NoOfCustomers+2,NoOfCustomers+2);
@@ -61,6 +61,8 @@ void MSTARSEP_SeparateMultiStarCuts(int NoOfCustomers,
 
     XMatrix[EdgeTail[i]][EdgeHead[i]] = EdgeX[i];
     XMatrix[EdgeHead[i]][EdgeTail[i]] = EdgeX[i];
+    //printf("i:%d (%d,%d): %g\n",
+    //     i,EdgeTail[i],EdgeHead[i],EdgeX[i]);
   }
 
 
@@ -103,7 +105,6 @@ void MSTARSEP_SeparateMultiStarCuts(int NoOfCustomers,
 
   *MaxViolation = 0.0;
   MaxHPMViolation = 0.0;
-  GeneratedCuts = 0;
 
   MaxTotalCuts = MaxNoOfCuts + CutsCMP->Size;
 

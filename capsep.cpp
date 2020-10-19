@@ -1,4 +1,5 @@
-/* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
+/* SAS modified this file. */
+
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
 
@@ -58,15 +59,16 @@ void CAPSEP_GetOneVehicleCapCuts(CnstrMgrPointer CutsCMP,
 }
 
 void CAPSEP_SeparateCapCuts(int NoOfCustomers,
-                            int *Demand,
-                            int CAP,
+                            const double *Demand,
+                            double CAP,
                             int NoOfEdges,
-                            int *EdgeTail,
-                            int *EdgeHead,
-                            double *EdgeX,
+                            const int *EdgeTail,
+                            const int *EdgeHead,
+                            const double *EdgeX,
                             CnstrMgrPointer CMPExistingCuts,
                             int MaxNoOfCuts,
                             double EpsForIntegrality,
+                            double EpsViolation, //MVG
                             char *IntegerAndFeasible,
                             double *MaxViolation,
                             CnstrMgrPointer CutsCMP)
@@ -81,8 +83,8 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
   int CutsBeforeLastProc;
   int CutNr,NodeListSize,NodeSum;
   int MinV;
-  double XSumInSet,LHS,RHS,Violation,EpsViolation,EpsInt;
-  int *SuperDemand;
+  double XSumInSet,LHS,RHS,Violation,EpsInt;
+  double *SuperDemand;
   int *SuperNodeSize;
   int *NodeList;
   double *XInSuperNode;
@@ -95,8 +97,8 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
   ReachPtr CapCutsRPtr;
   ReachPtr AntiSetsRPtr;
   ReachPtr OrigCapCutsRPtr;
-
-  EpsViolation = 0.01;
+  
+  //EpsViolation = 0.01;
   *IntegerAndFeasible = 0;
 
   ReachInitMem(&SupportPtr,NoOfCustomers+1);
@@ -106,7 +108,7 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
   ReachInitMem(&OrigCapCutsRPtr,MaxNoOfCuts);
   AntiSetsRPtr = NULL;
 
-  SuperDemand = MemGetIV(NoOfCustomers+1);
+  SuperDemand = MemGetDV(NoOfCustomers+1);
   SuperNodeSize = MemGetIV(NoOfCustomers+1);
   NodeList = MemGetIV(NoOfCustomers+1);
   XInSuperNode = MemGetDV(NoOfCustomers+1);
@@ -125,6 +127,8 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
 
     XMatrix[EdgeTail[i]][EdgeHead[i]] = EdgeX[i];
     XMatrix[EdgeHead[i]][EdgeTail[i]] = EdgeX[i];
+    //printf("i:%d (%d,%d): %g\n",
+    //     i,EdgeTail[i],EdgeHead[i],EdgeX[i]);
   }
 
   *MaxViolation = 0.0;
@@ -250,6 +254,8 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
   CopyReachPtr(CapCutsRPtr,&AntiSetsRPtr);
   GeneratedAntiSets = GeneratedCuts;
 
+  if(!AntiSetsRPtr)
+     goto EndOfCapSep;
   ReachPtrExpandDim(AntiSetsRPtr,CapCutsRPtr->n + ShrunkGraphCustNodes);
 
   MaxCuts = MaxNoOfCuts; /* Now allow up to the total maximum */
@@ -297,6 +303,8 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
 
     LHS = XSumInSet;
     Violation = LHS - RHS;
+    //printf("1: CapCut CutNr:%d violation:%g lhs:%g rhs:%g\n",
+    //     CutNr, Violation, LHS, RHS);
 
     if (Violation > *MaxViolation) *MaxViolation = Violation;
 
@@ -357,6 +365,8 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
 
       LHS = XSumInSet;
       Violation = LHS - RHS;
+      //printf("2: CapCut CutNr:%d violation:%g lhs:%g rhs:%g\n",
+      //     CutNr, Violation, LHS, RHS);
 
       if (Violation > *MaxViolation) *MaxViolation = Violation;
 
@@ -374,8 +384,11 @@ void CAPSEP_SeparateCapCuts(int NoOfCustomers,
 
   /* GeneratedCuts = CutsCMP->Size. */
 
+  
   EndOfCapSep:
 
+  //CMGR_WriteCMP(CutsCMP,0);
+  
   MemFree(SuperDemand);
   MemFree(SuperNodeSize);
   MemFree(NodeList);

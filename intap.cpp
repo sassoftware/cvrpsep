@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -86,8 +87,8 @@ void INTAPInit(INTAPPtr P)
   {
     P->rall[i] = 0;
     P->call[i] = 0;
-    P->u[i] = 0.0;
-    P->v[i] = 0.0;
+    P->u[i] = 0;
+    P->v[i] = 0;
     p[i] = 0;
   }
 

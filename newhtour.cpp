@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -1034,8 +1035,6 @@ void NEWHTOUR_HToursForHandle(ReachPtr SupportPtr,
   char *CustInSet;
   int *Mate, *SpecialH1, *SpecialH2, *QToDepot, *NextOnPath, *NodeList;
   double *Alpha, *Score, *MaxDeleteSum;
-
-  *MaxViolation = 0.0;
 
   CustInSet = MemGetCV(NoOfCustomers+2);
   QToDepot   = MemGetIV(NoOfCustomers+1);

@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -13,16 +14,17 @@
 
 void COMPCUTS_ComputeCompCuts(ReachPtr SupportPtr,
                               int NoOfCustomers,
-                              int *Demand,
-                              int CAP,
+                              const double *Demand,
+                              double CAP,
                               double **XMatrix,
                               CnstrMgrPointer CutsCMP,
                               int *GeneratedCuts)
 {
   int i,j,k;
   int TotalNodes,NoOfComponents,DepotCompNr,DepotDegree,NodeListSize,CutNr;
-  int CAPSum,MinV,TotalDemand,ComplementDemand;
-  int DemandSum;
+  int MinV;
+  double TotalDemand,CAPSum,ComplementDemand;
+  double DemandSum;
   double EpsViolation;
   double SumOfCompXSums,ComplementXSum;
   double LHS,RHS;
@@ -33,7 +35,7 @@ void COMPCUTS_ComputeCompCuts(ReachPtr SupportPtr,
   char *ConnectedToDepot;
   int *NodeList;
   int *CompNr; /* Node j is in component nr. CompNr[j]. */
-  int *CompDemandSum;
+  double *CompDemandSum;
   double *CompXSum;
 
   ReachPtr CompsRPtr;
@@ -65,7 +67,7 @@ void COMPCUTS_ComputeCompCuts(ReachPtr SupportPtr,
 
   /* The number of components excl. the depot is NoOfComponents-1 */
 
-  CompDemandSum = MemGetIV(NoOfComponents+1);
+  CompDemandSum = MemGetDV(NoOfComponents+1);
   CompXSum = MemGetDV(NoOfComponents+1);
 
   if (NoOfComponents == 2) goto EndOfCompCuts; /* The depot is one comp. */
@@ -136,7 +138,7 @@ void COMPCUTS_ComputeCompCuts(ReachPtr SupportPtr,
          3 customer components are required if the complement customers
          are not all in one component. */
 
-      ComplementDemand = TotalDemand - CompDemandSum[i];
+       ComplementDemand = TotalDemand - CompDemandSum[i];
       ComplementXSum = SumOfCompXSums - CompXSum[i];
 
       CAPSum = CAP;
@@ -215,7 +217,7 @@ void COMPCUTS_ComputeCompCuts(ReachPtr SupportPtr,
 
         if (ConnectedToDepot[i] == 0)
         {
-          DemandSum += CompDemandSum[i];
+           DemandSum += CompDemandSum[i];
           LHS += CompXSum[i];
 
           for (j=1; j<=CompsRPtr->LP[i].CFN; j++)

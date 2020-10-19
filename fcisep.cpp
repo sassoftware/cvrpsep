@@ -1,9 +1,11 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <cassert>
 #include "memmod.h"
 #include "basegrph.h"
 #include "cnstrmgr.h"
@@ -12,15 +14,16 @@
 #include "fcits.h"
 
 void FCISEP_SeparateFCIs(int NoOfCustomers,
-                         int *Demand,
-                         int CAP,
+                         const double *Demand,
+                         double CAP,
                          int NoOfEdges,
-                         int *EdgeTail,
-                         int *EdgeHead,
-                         double *EdgeX,
+                         const int *EdgeTail,
+                         const int *EdgeHead,
+                         const double *EdgeX,
                          CnstrMgrPointer CMPExistingCuts,
                          int MaxNoOfTreeNodes,
                          int MaxNoOfCuts,
+                         double  EpsViolation,
                          double *MaxViolation,
                          CnstrMgrPointer CutsCMP)
 {
@@ -29,7 +32,7 @@ void FCISEP_SeparateFCIs(int NoOfCustomers,
   int NoOfV1Cuts;
   int ShrunkGraphCustNodes;
   int MaxFCITSLoops;
-  int *SuperDemand;
+  double *SuperDemand;
   double *XInSuperNode;
   double **XMatrix;
   double **SMatrix;
@@ -37,12 +40,17 @@ void FCISEP_SeparateFCIs(int NoOfCustomers,
   ReachPtr V1CutsPtr;
   ReachPtr SAdjRPtr;
   ReachPtr SuperNodesRPtr;
-
+#ifdef DEBUG
+  for (i=1; i<=NoOfEdges; i++){
+     assert(EdgeTail[i] <= NoOfCustomers+1);
+     assert(EdgeHead[i] <= NoOfCustomers+1);
+  }
+#endif
   ReachInitMem(&SupportPtr,NoOfCustomers+1);
   ReachInitMem(&SAdjRPtr,NoOfCustomers+1);
   ReachInitMem(&SuperNodesRPtr,NoOfCustomers+1);
 
-  SuperDemand = MemGetIV(NoOfCustomers+1);
+  SuperDemand = MemGetDV(NoOfCustomers+1);
   XInSuperNode = MemGetDV(NoOfCustomers+1);
 
   SMatrix = MemGetDM(NoOfCustomers+2,NoOfCustomers+2);
@@ -79,6 +87,7 @@ void FCISEP_SeparateFCIs(int NoOfCustomers,
   ReachFreeMem(&V1CutsPtr);
 
   /* Compute data of supernodes */
+  //printf("ShrunkGraphCustNodes:%d\n",ShrunkGraphCustNodes);
   for (i=1; i<=ShrunkGraphCustNodes; i++)
   {
     XInSuperNode[i] = SMatrix[i][i];
@@ -88,6 +97,7 @@ void FCISEP_SeparateFCIs(int NoOfCustomers,
     {
       k = SuperNodesRPtr->LP[i].FAL[j];
       SuperDemand[i] += Demand[k];
+      //printf("Shrunk i:%d k:%d SuperDemand:%d\n",i,k,SuperDemand[i]);
     }
   }
 
@@ -105,6 +115,7 @@ void FCISEP_SeparateFCIs(int NoOfCustomers,
                    ShrunkGraphCustNodes,
                    MaxFCITSLoops,
                    MaxNoOfCuts,
+                   EpsViolation,
                    MaxViolation,
                    &GeneratedCuts,
                    CutsCMP);

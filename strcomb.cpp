@@ -1,3 +1,4 @@
+/* SAS modified this file. */
 /* (C) Copyright 2003 Jens Lysgaard. All rights reserved. */
 /* OSI Certified Open Source Software */
 /* This software is licensed under the Common Public License Version 1.0 */
@@ -211,7 +212,7 @@ void STRCOMB_ExpandTooth(ReachPtr SupportPtr,
   int i,j,k,t;
   int TotalDemand;
   int NodeListSize,BestNodeListSize,InitNodeListSize,BestNode,BestXNode;
-  int Stage;
+  int Stage,BestStage = 0;
   double XVal,BestX,ToothDelta,Slack,BestSlack;
   double NewToothDelta,NewSlack,NewBestSlack;
   char *Reached, *Selectable, *InSet;
@@ -478,6 +479,7 @@ void STRCOMB_ExpandTooth(ReachPtr SupportPtr,
       InSet[BestNode] = 1;
       Selectable[BestNode] = 0;
       NodeList[++NodeListSize] = BestNode;
+      NodeStage[BestNode] = ++BestStage;
 
       if (InHandle[BestNode])
       {
