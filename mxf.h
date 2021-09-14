@@ -53,7 +53,7 @@ void MXF_SetFlow(MaxFlowPtr Ptr,
 
 void MXF_ComputeGHCutTree(MaxFlowPtr Ptr,
                           int CenterNode,
-                          int *CutValue,
+                          double *CutValue,
                           int *NextOnPath);
 
 #endif
