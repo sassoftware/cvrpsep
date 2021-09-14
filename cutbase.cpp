@@ -79,6 +79,10 @@ void CUTBASE_CompVehiclesForSet(int NoOfCustomers,
     if (NodeInSet[i])
     DemandSum += Demand[i];
   }
+  if(DemandSum == 0){
+     *MinV = 0;
+     return;
+  }
 
   *MinV = 1;
   CAPSum = CAP;

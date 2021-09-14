@@ -21,7 +21,7 @@ void MXF_SetNodeListSize(MaxFlowPtr Ptr,
 void MXF_AddArc(MaxFlowPtr Ptr,
                 int Tail,
                 int Head,
-                int Capacity);
+                double Capacity);
 void MXF_ChgArcCap(MaxFlowPtr Ptr,
                    int Tail,
                    int Head,

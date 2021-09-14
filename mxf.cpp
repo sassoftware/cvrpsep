@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cassert>
+#include <float.h>
 #include "mxf.h"
 #include "memmod.h"
 
@@ -249,7 +250,7 @@ void MXF_SetNodeListSize(MaxFlowPtr Ptr,
 void LMXF_AddArc(MaxFlowPtr Ptr,
                  int Tail,
                  int Head,
-                 int Capacity,
+                 double Capacity,
                  int *Index)
 {
   int i,j;
@@ -322,7 +323,7 @@ void LMXF_AddArc(MaxFlowPtr Ptr,
 void MXF_AddArc(MaxFlowPtr Ptr,
                 int Tail,
                 int Head,
-                int Capacity)
+                double Capacity)
 {
   int i;
   LMXF_AddArc(Ptr,Tail,Head,Capacity,&i);
@@ -624,8 +625,10 @@ void LMXF_Push(MXF_Ptr P,
   P->NodePtr[Tail].Excess -= Delta;
   P->ArcPtr[Arc].R -= Delta;
 
-  P->NodePtr[Head].Excess += Delta;
-  P->ArcPtr[Mate].R += Delta;
+  if(P->NodePtr[Head].Excess < DBL_MAX)
+     P->NodePtr[Head].Excess += Delta;
+  if(P->ArcPtr[Mate].R < DBL_MAX)
+     P->ArcPtr[Mate].R += Delta;
 }
 
 void LMXF_ClearBucket(MXF_Ptr P)

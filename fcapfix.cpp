@@ -5,6 +5,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
+#include <float.h>
 #include "memmod.h"
 #include "basegrph.h"
 #include "cutbase.h"
@@ -146,8 +148,8 @@ void FCAPFIX_SolveMaxFlow(MaxFlowPtr MXFPtr,
                           double InfCap,
                           double *ResidualCap,
                           double *NodeExcess,
-                          int *ArcCapFromSource,
-                          int *ArcCapToSink,
+                          double *ArcCapFromSource,
+                          double *ArcCapToSink,
                           int *FixOnSourceSide,
                           int SourceFixedListSize,
                           int *FixOnSinkSide,
@@ -287,8 +289,8 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
 {
   const double EpsViolation = 0.01;
   int i,j,k,DepotIdx,RoundNr,AddNode,AddSecondNode;
-  int GraphNodes,ArcCap;
-  double VCAP,InfCap,MaxFlowValue;
+  int GraphNodes;
+  double VCAP,ArcCap,InfCap,MaxFlowValue;
   int OrigNodes,MinV;
   double DemandSum,CAPSum,MaxDemand;
   int FlowScale;
@@ -311,7 +313,7 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
 
   int *NodeList;
   int *FixedToSourceList, *FixedToSinkList;
-  int *ArcCapToSink, *ArcCapFromSource;
+  double *ArcCapToSink, *ArcCapFromSource;
   double *DepotEdgeXVal;
   ReachPtr HistoryRPtr;
   MaxFlowPtr MXFPtr;
@@ -338,8 +340,8 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
   NodeInSet = MemGetCV(NoOfCustomers+1);
   FixedOut  = MemGetCV(NoOfCustomers+1);
 
-  ArcCapToSink = MemGetIV(NoOfCustomers+1);
-  ArcCapFromSource = MemGetIV(NoOfCustomers+1);
+  ArcCapToSink = MemGetDV(NoOfCustomers+1);
+  ArcCapFromSource = MemGetDV(NoOfCustomers+1);
   FixedToSourceList = MemGetIV(NoOfCustomers+1);
   FixedToSinkList = MemGetIV(NoOfCustomers+1);
   NodeList = MemGetIV(NoOfCustomers+2); /* (space for sink in flow network) */
@@ -366,7 +368,7 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
       {
         XVal = XMatrix[i][k];
         XVal *= VCAP;
-        ArcCap = (int)(XVal + 1); /* => Round up. */
+        ArcCap = floor(XVal + 1); /* => Round up. */
 
         MXF_AddArc(MXFPtr,i,k,ArcCap);
         MXF_AddArc(MXFPtr,k,i,ArcCap);
@@ -389,17 +391,23 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
   for (k=1; k<=NoOfCustomers; k++)
   {
     XVal = DepotEdgeXVal[k];
-    XVal *= VCAP;
-
-    XVal = XVal + 1 - 2 * FlowScale * Demand[k];
+    if(VCAP >= DBL_MAX)
+       XVal = VCAP;
+    else{
+       XVal *= VCAP;
+       XVal = XVal + 1 - 2 * FlowScale * Demand[k];
+    }
 
     /* Arcs (Source,k) and (k,Sink) are added in any case. */
 
     if (XVal > 0)
     {
-      ArcCap = (int)(XVal);
+       ArcCap = floor(XVal);
 
-      InfCap += ArcCap;
+      if(ArcCap >= DBL_MAX)
+         InfCap = ArcCap;
+      else
+         InfCap += ArcCap;
 
       MXF_AddArc(MXFPtr,NoOfCustomers+1,k,ArcCap);
       MXF_AddArc(MXFPtr,k,NoOfCustomers+2,0); /* Zero capacity to sink. */
@@ -409,16 +417,19 @@ void FCAPFIX_ComputeCuts(ReachPtr SupportPtr,
     else
     if (XVal <= 0)
     {
-      ArcCap = -(int)(XVal);
+       ArcCap = -floor(XVal);
 
-      MXF_AddArc(MXFPtr,k,NoOfCustomers+2,ArcCap);
-      MXF_AddArc(MXFPtr,NoOfCustomers+1,k,0); /* Zero capacity from source. */
-      ArcCapToSink[k] = ArcCap;
-      ArcCapFromSource[k] = 0;
+       MXF_AddArc(MXFPtr,k,NoOfCustomers+2,ArcCap);
+       MXF_AddArc(MXFPtr,NoOfCustomers+1,k,0); /* Zero capacity from source. */
+       ArcCapToSink[k] = ArcCap;
+       ArcCapFromSource[k] = 0;
     }
   }
 
-  InfCap += (2 * VCAP);
+  if(VCAP >= DBL_MAX)
+     InfCap = VCAP;
+  else
+     InfCap += (2 * VCAP);
 
   MXF_CreateMates(MXFPtr);
 
