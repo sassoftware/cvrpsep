@@ -172,7 +172,8 @@ void TWOMATCH_ExactTwoMatchings(ReachPtr SupportPtr,
   int IntListSize, ExtListSize;
   char *OddNode, *OnHandleSide, *InTooth;
   int *NewNodeTail, *NewNodeHead;
-  int *CutValue, *NextOnPath;
+  double *CutValue;
+  int *NextOnPath;
   int *NodeList;
   int *IntList, *ExtList;
   MaxFlowPtr MXFPtr;
@@ -222,7 +223,7 @@ void TWOMATCH_ExactTwoMatchings(ReachPtr SupportPtr,
   OnHandleSide = MemGetCV(TotalNodes+1);
   InTooth = MemGetCV(TotalNodes+1);
 
-  CutValue = MemGetIV(TotalNodes+1);
+  CutValue = MemGetDV(TotalNodes+1);
   NextOnPath = MemGetIV(TotalNodes+1);
 
   IntList = MemGetIV(TotalNodes+1);
